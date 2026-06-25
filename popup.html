@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title data-i18n="app_title">S标签页</title>
+<script src="i18n.js"></script>
+<style>
+  body {
+    margin: 0; padding: 0; width: 480px; height: 490px; overflow: hidden;
+    /* ⭐ 去除磨砂玻璃特效，采用 Windows 质感纯净微透面板 */
+    background: #f8fafc !important;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    font-family: "Microsoft YaHei", Arial, sans-serif; user-select: none;
+    color: #1e293b;
+  }
+  .s-add-box {
+    width: 100%; height: 100%; padding: 20px; box-sizing: border-box;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .s-add-box * { box-sizing: border-box; }
+  .s-add-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 14px; }
+  .s-add-header h3 { font-size: 15px; font-weight: 800; margin: 0; color: #1e293b; }
+  
+  .s-add-dup-toast-bar {
+    font-size: 12.5px !important;
+    color: #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.08) !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    margin-top: 8px !important;
+    width: 100% !important;
+    text-align: left !important;
+    border-left: 3px solid #3b82f6 !important;
+    box-sizing: border-box !important;
+  }
+
+  .s-add-field { margin-bottom: 10px; }
+  .s-add-field label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #475569; }
+  .s-add-field input {
+    width: 100%; padding: 8px 12px; border: 1px solid rgba(0,0,0,0.06); border-radius: 8px;
+    outline: none; font-weight: 600; color: #1e293b; background: #ffffff;
+    font-size: 12.5px; transition: all 0.2s;
+  }
+  .s-add-field input:focus {
+    border-color: #3b82f6; background: #ffffff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .s-add-section-title { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; color: #475569; }
+  .s-add-grid-container { height: 210px; overflow-y: auto; margin-bottom: 14px; padding: 2px; outline: none; }
+  .s-add-grid-container::-webkit-scrollbar { width: 4px; }
+  .s-add-grid-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 4px; }
+  .s-add-grid { display: grid; grid-template-columns: repeat(4, 94px); gap: 14px; justify-content: center; }
+  
+  .s-add-card { width: 94px; display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; transition: transform 0.2s; }
+  .s-add-card:hover { transform: translateY(-1px); }
+  .s-add-card-body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 50px; height: 50px; background: #ffffff; border-radius: 12px; border: 1.2px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: all 0.2s; position: relative;
+  }
+  .s-add-card.selected .s-add-card-body {
+    border-color: #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.12) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+  }
+  .s-add-card.is-folder .s-add-card-body { border-color: #facc15 !important; }
+  .s-add-card-icon { font-size: 16px; }
+  .s-add-card.selected .s-add-card-title { color: #3b82f6 !important; }
+  .s-add-card-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 94px; text-align: center; font-size: 11px; color: #334155; font-weight: 600; margin-top: 5px; }
+  
+  .s-add-card.btn-add-folder .s-add-card-body { border: 1.5px dashed #facc15 !important; background: rgba(255,255,255,0.5) !important; box-shadow: none; }
+  .s-add-card.btn-add-folder .s-add-card-body span { font-size: 18px; color: #94a3b8; font-weight: 700; }
+  .s-popup-folder-badge { position: absolute; bottom: 3px; right: 3px; font-size: 10px; pointer-events: none; }
+
+  .s-add-footer { display: flex; justify-content: flex-end; gap: 8px; }
+  .s-add-btn-save { padding: 8px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12.5px; background: #3b82f6; color: #fff; transition: background 0.2s; }
+  .s-add-btn-save:hover { background: #2563eb; }
+  
+  /* ⭐ 去除弹窗遮罩中的高负荷高斯模糊属性，保证开启新建文件夹时性能如初 */
+  .s-nested-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.35); display: none; align-items: center; justify-content: center; z-index: 100; }
+  .s-nested-box { background: rgba(255, 255, 255, 0.98); border-radius: 14px; width: 320px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.05); }
+  .s-nested-box h4 { font-size: 13.5px; font-weight: 800; margin-top: 0; margin-bottom: 12px; color: #1e293b; }
+  .s-nested-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .s-nested-btn-cancel { padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; background: #f1f5f9; color: #475569; }
+  .s-nested-btn-cancel:hover { background: #e2e8f0; }
+  .s-nested-btn-confirm { padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; background: #3b82f6; color: #fff; }
+  .s-nested-btn-confirm:hover { background: #2563eb; }
+</style>
+</head>
+<body>
+  <div class="s-add-box">
+    <div class="s-add-header">
+      <h3 data-i18n="popup_add_title">添加当前网页到 S导航</h3>
+    </div>
+    <div class="s-add-field">
+      <label data-i18n="label_name">名称</label>
+      <input id="sAddPageTitleInput" type="text" value="">
+    </div>
+    <div class="s-add-field">
+      <label data-i18n="label_url">网址</label>
+      <input id="sAddPageUrlInput" type="text" value="">
+    </div>
+    <div class="s-add-section-title" data-i18n="popup_select_location">选择保存位置</div>
+    <div class="s-add-grid-container" id="sAddGridContainer" tabindex="0">
+      <div class="s-add-grid" id="sAddFolderGrid"></div>
+    </div>
+    <div class="s-add-footer">
+      <button class="s-add-btn-save" id="sAddSaveBtn" data-i18n="btn_confirm_save">保 存</button>
+    </div>
+    
+    <div class="s-nested-modal" id="sNestedFolderModal">
+      <div class="s-nested-box">
+        <h4 data-i18n="new_folder">新建文件夹</h4>
+        <div class="s-add-field">
+          <input id="sNestedFolderNameInput" type="text" data-i18n-placeholder="folder_name_placeholder" placeholder="输入文件夹名称...（回车确定保存）">
+        </div>
+        <div class="s-nested-footer">
+          <button class="s-nested-btn-cancel" id="sNestedCancelBtn" data-i18n="btn_cancel">取消</button>
+          <button class="s-nested-btn-confirm" id="sNestedSaveBtn" data-i18n="btn_confirm_save">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

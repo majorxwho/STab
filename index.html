@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title data-i18n="app_title">S标签页</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Microsoft YaHei",Arial,sans-serif;color:#1e293b;overflow-x:hidden; overflow-y:auto; min-height:100vh; background: transparent !important; user-select: none;}
+
+/* ⭐ 核心背景样式融合 */
+.aurora-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; overflow: hidden !important; will-change: background, background-position; transform: translateZ(0); }
+.aurora-bg-inner { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+.theme-time .aurora-bg::after { 
+  content: ""; 
+  position: absolute; 
+  width: 240px; /* 🟢 收拢实体尺寸 */
+  height: 240px; 
+  border-radius: 50%; 
+  /* 🟢 纯黄色无缝过渡：中心柔和，边缘自然散开 */
+  background: radial-gradient(circle, rgba(253, 224, 71, 0.75) 0%, rgba(253, 224, 71, 0.2) 30%, rgba(253, 224, 71, 0) 100%) !important;
+  filter: blur(28px); /* 🟢 单层轻量模糊：彻底虚化任何潜在的边界感，让太阳在前半段也呈现出极度发散、雾茫茫的效果 */
+  opacity: 0.5; /* 🟢 调低基础透明度，使其更深地融入天空背景色 */
+  animation: artworkSunOrbit 60s linear infinite; 
+  will-change: left, top, opacity; 
+  transform: translate(-50%, -50%); 
+}
+
+.theme-pure .aurora-bg { background: #f5f7fb !important; animation: none !important; }
+.theme-pure .aurora-bg::after, .theme-pure .aurora-bg-inner::after { display: none !important; }
+
+@keyframes artworkLowKeyDaylightCycle { 0%, 100% { background: #fbfbfd; } 30% { background: #f4f7fa; } 50% { background: #f0f4f8; } 75% { background: #e2eaf4; } 90% { background: #e9e5eb; } }
+@keyframes artworkSunOrbit { 
+  0% { 
+    left: -15%; 
+    top: 65%; 
+    opacity: 0; 
+  } 
+  12% { 
+    opacity: 0.75; 
+  }
+  25% { 
+    left: 17.5%; 
+    top: 34%; 
+  } 
+  50% { 
+    left: 50%; 
+    top: 16%; /* 🟢 拱顶高度调整为 16%，避开屏幕边缘，呈现完美的圆润弧度 */
+    opacity: 0.95; 
+  } 
+  75% { 
+    left: 82.5%; 
+    top: 34%; 
+  } 
+  88% { 
+    opacity: 0.75; 
+  }
+  100% { 
+    left: 115%; 
+    top: 65%; 
+    opacity: 0; 
+  } 
+}
+
+/* 🧱 网页主体容器样式 */
+.main{ min-height:100vh; display:flex; flex-direction:column; align-items:center; padding-top: calc(14vh + 112px); padding-bottom: 50px; }
+.main h1{font-size:38px; margin-bottom: 40px; font-weight:500; letter-spacing: 2px; color: #1e293b;}
+
+/* 🔍 统一大搜索框（去除磨砂，改用高性能微透扁平化设计） */
+.unified-search{width:600px; max-width:95%; margin-bottom:40px; display:flex; align-items:center; background:rgba(255,255,255,0.98); border-radius:30px; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05); overflow:visible; position: relative !important; border: 1px solid rgba(0,0,0,0.06); height: 50px; z-index: 6000; will-change: box-shadow, border-color; transform: translateZ(0);}
+.unified-search:focus-within{box-shadow: 0 8px 24px rgba(59,130,246,0.12); border-color: #3b82f6; z-index: 100000 !important;}
+.search-engine-icon-container { display: flex; align-items: center; justify-content: center; padding-left: 20px; }
+.search-engine-icon-container img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain;}
+
+.engine-trigger-span { font-size:15px; font-weight:700; color:#4b5563; cursor:pointer; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 2px; white-space: nowrap; }
+.engine-trigger-span:hover { color: #3b82f6; }
+.engine-popup-menu { display: none; position: absolute; top: 105%; left: 20px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08); z-index: 2000; width: 230px; padding: 6px 0; overscroll-behavior: contain; }
+.engine-item-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; cursor: pointer; transition: 0.2s; }
+.engine-item-row:hover { background: rgba(59,130,246,0.08); }
+.engine-item-left { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #334155; }
+.engine-item-left img { width: 16px; height: 16px; border-radius: 3px; }
+.engine-item-ops { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #64748b; }
+.engine-item-ops span:hover { color: #3b82f6; }
+.engine-item-ops .eng-del-btn:hover { color: #ef4444; }
+
+.unified-search input{flex:1;border:0;outline:0;padding:0 14px;font-size:16px; background:transparent; color: #1e293b; height: 100%;}
+
+/* ⭐ 历史记录控制开关样式 */
+.search-history-toggle-btn { cursor: pointer; padding: 0 6px 0 12px; color: #64748b; display: flex; align-items: center; transition: all 0.2s; height: 100%; font-size: 16px; user-select: none; }
+.search-history-toggle-btn:hover { transform: scale(1.08); color: #3b82f6; }
+
+.search-trash-btn { cursor: pointer; padding: 0 16px 0 8px; color: #64748b; display: flex; align-items: center; transition: 0.2s; height: 100%; }
+.search-trash-btn:hover { color: #ef4444; }
+
+.unified-search .search-submit { width:95px; border:0; background:#3b82f6; color:#ffffff; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.2s; height:100%; border-top-right-radius: 29px; border-bottom-right-radius: 29px; border-left: none; }
+.unified-search .search-submit:hover { background:#2563eb; }
+
+/* ⭐ 搜索联想及历史框 */
+.search-suggestions { position: absolute; top: 105%; left: 104px; width: calc(100% - 232px); background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); z-index: 99999; display: none; flex-direction: column; padding: 4px 0; overscroll-behavior: contain; }
+.suggestion-item { padding: 8px 16px; font-size: 14px; font-weight: 400; color: rgba(71, 85, 105, 0.65); cursor: pointer; text-align: left; transition: background 0.15s, color 0.15s; }
+.suggestion-item:hover, .suggestion-item.active { background: rgba(59, 130, 246, 0.06); color: #3b82f6; }
+
+/* 📂 导航外壳 */
+#navContainer { width: 820px; max-width: 95%; margin-top: 10px; position: relative; }
+.nav-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.04); padding-bottom: 10px; position: relative; }
+.nav-header h2 { font-size:16px; color:#475569; font-weight:700; letter-spacing: 0.5px; display: flex; align-items: center; }
+
+.snav-search-wrapper { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: 280px; z-index: 1000; }
+.snav-search-wrapper input { width: 100%; height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.08); background: rgba(255,255,255,0.95); outline: none; font-size: 13px; color: #1e293b; font-weight: 600; transition: all 0.2s; text-align: left; }
+.snav-search-wrapper input:focus { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.08); background: rgba(255,255,255,0.98); }
+.snav-search-wrapper input::placeholder { color: rgba(71, 85, 105, 0.65) !important; font-weight: 400 !important; }
+.snav-search-results { position: absolute; top: 110%; left: 0; width: 100%; max-height: 200px; overflow-y: auto; overflow-x: hidden !important; background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 12px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08); z-index: 5001; display: none; flex-direction: column; padding: 4px 0; overscroll-behavior: contain; }
+.snav-search-results::-webkit-scrollbar { width: 4px; }
+.snav-search-results::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 4px; }
+.snav-search-results .site { width: 100% !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; height: 38px !important; flex-shrink: 0 !important; background: transparent !important; border: none !important; border-bottom: 1px solid rgba(0,0,0,0.02) !important; padding: 0 12px !important; gap: 10px !important; transition: all 0.2s !important; cursor: pointer !important; }
+.snav-search-results .site:hover { background: rgba(59, 130, 246, 0.08) !important; transform: none !important; box-shadow: none !important; }
+
+.snav-shortcut-tips { font-size: 13px; color: #475569; font-weight: 500; letter-spacing: 0.2px; text-align: center; display: block; width: 100%; margin: 0 Auto 24px auto; }
+
+/* 🧱 网页卡片网格 */
+.grid { display:grid; grid-template-columns:repeat(8, 80px); grid-auto-rows:88px; column-gap:22px; row-gap:24px; position:relative; justify-content: center; }
+.site {position:relative; width:80px; display:flex; flex-direction:column; align-items:center; transition: transform 0.2s cubic-bezier(0.2, 1, 0.3, 1); will-change: transform;}
+.site .card-body { position: relative; display:flex; align-items:center; justify-content:center; width:54px; height:54px; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.03); border: 1px solid rgba(0,0,0,0.01); transition: all 0.2s; }
+.site:hover .card-body { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+.site img{width:24px; height:24px; object-fit: contain; -webkit-user-drag: none;}
+
+/* ⭐ 文件夹外观 */
+.site.is-folder .card-body { border: 1.2px solid #facc15 !important; background: #ffffff !important; }
+/* ⭐ 开启中的文件夹卡片高精蓝色底纹高亮样式 */
+.site.is-active-folder .card-body {
+  border: 1.2px solid #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+.folder-corner-badge { position: absolute; bottom: 4px; right: 4px; font-size: 11px; background: transparent !important; box-shadow: none !important; pointer-events: none; z-index: 4; display: flex; align-items: center; justify-content: center; width: auto; height: auto; }
+.folder-thumb-grid { display: grid; grid-template-columns: repeat(2, 16px); grid-template-rows: repeat(2, 16px); gap: 4px; align-items: center; justify-content: center; width: 36px; height: 36px; pointer-events: none; }
+.folder-thumb-grid img { width: 16px; height: 16px; object-fit: contain; border-radius: 2px; }
+
+.drag-handle-4dots { position: absolute; top: -3px; left: -3px; width: 14px; height: 14px; display: grid; grid-template-columns: repeat(2, 4px); gap: 2px; padding: 2px; cursor: grab; background: #f1f5f9; border-radius: 4px; border: 1px solid rgba(0,0,0,0.05); opacity: 0; transition: opacity 0.2s; z-index: 5; }
+.site:hover .drag-handle-4dots { opacity: 1; }
+.drag-handle-4dots span { width: 2px; height: 2px; background: #64748b; border-radius: 50%; }
+.drag-handle-4dots:hover { background: #e2e8f0; }
+.drag-handle-4dots:hover span { background: #3b82f6; }
+
+.more-actions-3dots { position: absolute; top: -3px; right: -3px; width: 14px; height: 14px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1.5px; padding: 2px; cursor: pointer; background: #f1f5f9; border-radius: 4px; border: 1px solid rgba(0,0,0,0.05); opacity: 0; transition: opacity 0.2s; z-index: 6; }
+.site:hover .more-actions-3dots { opacity: 1; }
+.more-actions-3dots span { width: 2.5px; height: 2.5px; background: #64748b; border-radius: 50%; }
+.more-actions-3dots:hover { background: #e2e8f0; }
+.more-actions-3dots:hover span { background: #3b82f6; }
+
+.site div.site-title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 80px; text-align:center; font-size:12px; color:#334155; font-weight: 600; margin-top:8px; padding: 0 2px; pointer-events: none; }
+
+/* 🧱 设置与选择按钮位置 */
+.settings-container { position: fixed; left: 25px; bottom: 20px; z-index: 50; opacity: 0.55; transition: opacity 0.25s ease; }
+.settings-container:hover { opacity: 1; }
+
+.bg-selector-container { position: fixed; top: 20px; right: 25px; z-index: 50; opacity: 0.55; transition: opacity 0.25s ease; }
+.bg-selector-container:hover { opacity: 1; }
+
+.settings-btn, .bg-btn { border: none; background: rgba(255, 255, 255, 0.95); color: #334155; padding: 11px 20px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; transition: background 0.2s, color 0.2s; }
+.settings-btn:hover, .bg-btn:hover { background: rgba(255, 255, 255, 0.98); color: #3b82f6; }
+
+.bg-menu { display: none; position: absolute; top: 100%; right: 0; background: rgba(255, 255, 255, 0.98) !important; min-width: 140px; border-radius: 12px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08); overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.08) !important; padding: 4px 0; overscroll-behavior: contain; }
+.bg-selector-container:hover .bg-menu { display: block; }
+.bg-menu button { display: block; width: 100%; text-align: right; padding: 11px 18px; border: none; background: none; cursor: pointer; font-size: 14px; color: #475569; font-weight: 600; }
+.bg-menu button:hover { background: rgba(59,130,246,0.08); color: #3b82f6; }
+
+.settings-menu { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(255, 255, 255, 0.98) !important; min-width: 160px; border-radius: 12px; box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08); overflow: hidden; border: 1px solid rgba(0,0,0,0.08) !important; padding: 4px 0; overscroll-behavior: contain; }
+.settings-container:hover .settings-menu { display: block; }
+.settings-menu button { display: flex; align-items: center; width: 100%; text-align: left; padding: 11px 18px; border: none; background: none; cursor: pointer; font-size: 14px; color: #475569; font-weight: 600; }
+.settings-menu button svg, .settings-menu button img { flex-shrink: 0; margin-right: 8px; }
+.settings-menu button:hover { background: rgba(59, 130, 246, 0.08) !important; color: #3b82f6 !important; }
+.settings-menu button.btn-reset-danger { color: #ef4444; border-top: 1px dashed rgba(239,68,68,0.15); }
+
+/* ⭐ 静态引导 */
+.marquee-intro-scroller {
+  position: fixed; right: 25px; bottom: 20px; height: 38px; width: auto;
+  z-index: 49; background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; padding: 0 14px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+  transition: all 0.25s ease;
+}
+.marquee-text-window { height: 18px; width: 440px; overflow: hidden; position: relative; display: block; transition: width 0.25s ease, opacity 0.2s; }
+.marquee-intro-scroller.is-collapsed-state .marquee-text-window { width: 0px !important; opacity: 0 !important; pointer-events: none; }
+.marquee-intro-inner { display: flex; flex-direction: column; position: absolute; right: 0; top: 0; width: 100%; will-change: transform; transform: translateZ(0); transition: opacity 0.2s; }
+.marquee-intro-line { height: 18px; line-height: 18px; font-size: 12px; color: rgba(71, 85, 105, 0.65); font-weight: 500; letter-spacing: 0.2px; text-align: right; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; transition: color 0.2s, font-weight 0.2s; }
+.marquee-intro-scroller:hover .marquee-intro-line { color: #1e293b !important; font-weight: 700 !important; }
+.marquee-toggle-trigger-btn { font-size: 12px; font-weight: 500; color: rgba(71, 85, 105, 0.65); cursor: pointer; transition: color 0.2s; user-select: none; padding: 4px 6px; background: rgba(0,0,0,0.02); border-radius: 6px; }
+.marquee-toggle-trigger-btn:hover { color: #3b82f6; background: rgba(0,0,0,0.04); }
+
+#universalContextMenu { display: none; position: fixed; background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); z-index: 99999; width: 140px; padding: 4px 0; overscroll-behavior: contain; }
+#universalContextMenu button { display: block; width: 100%; border: none; background: none; padding: 8px 12px; text-align: left; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; transition: background 0.15s; }
+#universalContextMenu button:hover { background: #f3f4f6; color: #3b82f6; }
+
+@keyframes pulseIconLoad { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.96); } }
+
+/* ⭐ 统一大层级全局弹窗遮罩 */
+.s-fixed-modal-mask { display:none; position:fixed; top:0; left:0; width:100vw !important; height:100vh !important; background:rgba(0,0,0,0.4); align-items:center; justify-content:center; z-index:99999; }
+.modal-box { background: rgba(255,255,255,0.98); border-radius:14px; width:380px; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,0.1); border:1px solid rgba(0,0,0,0.08); will-change: transform, opacity; transform: translateZ(0); }
+.field { margin-bottom:14px; }
+.field label { display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:#475569; }
+.field input { width:100%; padding:9px 12px; border:1px solid rgba(0,0,0,0.08); border-radius:8px; outline:none; font-weight:600; color:#1e293b; background:#fff; font-size:13px; }
+.field input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+.field input::placeholder { color: rgba(71, 85, 105, 0.65) !important; font-weight: 400; }
+
+.modal-footer { text-align:right; margin-top:20px; display: flex; justify-content: flex-end; gap: 8px; }
+.modal-footer button { padding:9px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px; transition: background 0.2s; }
+.btn-cancel { background:#f1f5f9; color:#475569; }
+.btn-cancel:hover { background:#e2e8f0; }
+.btn-confirm { background:#3b82f6; color:#fff; }
+.btn-confirm:hover { background:#2563eb; }
+
+/* ⭐ 彻底移除破坏全局合成的高斯模糊属性，改用高效静态颜色定位外壳 */
+#syncModal, #sbRegisterModal, #aboutModal, #superPasswordModal, #folderPasswordMgrModal, #nasAboutModal, #resetWarningModal, #languageModal { 
+  display: none; position: fixed; top: 0; left: 0; width: 100vw !important; height: 100vh !important; 
+  background: rgba(15, 23, 42, 0.45) !important;
+  align-items: center; justify-content: center; z-index: 10000; 
+}
+
+/* 统一控制弹窗的外观尺寸 and 内部磨砂玻璃缓存（去掉磨砂，优化为高性能Windows半透明悬浮面板） */
+.sync-card-layout, .ui-modal-body, .about-card-layout, .super-pwd-card-layout, .reset-warning-card-layout { 
+  background: rgba(255, 255, 255, 0.98) !important; border-radius: 20px; width: 480px; height: 530px; 
+  padding: 24px 28px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important; 
+  position: relative; display: flex; flex-direction: column; overflow: hidden; 
+}
+
+/* 🔒 密码管理弹窗 */
+.folder-pwd-card-layout { 
+  background: rgba(255, 255, 255, 0.98) !important; border-radius: 18px; width: 320px; height: auto !important; 
+  padding: 20px 24px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important; 
+  position: relative; display: flex; flex-direction: column; overflow: hidden; 
+}
+.folder-pwd-card-layout button {
+  width: 100%; padding: 11px; border: none; border-radius: 8px; font-weight: 700; font-size: 12.5px;
+  cursor: pointer; transition: background 0.2s, transform 0.1s;
+}
+.folder-pwd-card-layout button:active {
+  transform: scale(0.98);
+}
+
+/* ☁️ 针对云同步弹窗高度与内部滚动区大小专门向下拉高优化 */
+#syncModal .sync-card-layout {
+  height: 600px;
+}
+#syncModal .sync-internal-scroller {
+  max-height: 495px;
+}
+
+/* 三通道高级高斯选择类驱动 */
+.active-tab-browser #panelSyncBrowser { display: block !important; }
+.active-tab-browser #panelSyncNas { display: none !important; }
+.active-tab-browser #panelSyncWebdav { display: none !important; }
+.active-tab-browser #btnTabSyncBrowser { background: #3b82f6 !important; color: white !important; }
+
+.active-tab-nas #panelSyncBrowser { display: none !important; }
+.active-tab-nas #panelSyncNas { display: block !important; }
+.active-tab-nas #panelSyncWebdav { display: none !important; }
+.active-tab-nas #btnTabSyncBrowser { background: transparent !important; color: #475569 !important; }
+.active-tab-nas #btnTabSyncNas { background: #3b82f6 !important; color: white !important; }
+
+.active-tab-webdav #panelSyncBrowser { display: none !important; }
+.active-tab-webdav #panelSyncNas { display: none !important; }
+.active-tab-webdav #panelSyncWebdav { display: block !important; }
+.active-tab-webdav #btnTabSyncBrowser { background: transparent !important; color: #475569 !important; }
+.active-tab-webdav #btnTabSyncNas { background: transparent !important; color: #475569 !important; }
+.active-tab-webdav #btnTabSyncWebdav { background: #3b82f6 !important; color: white !important; }
+
+.sync-internal-scroller { flex: 1; overflow-y: auto !important; overflow-x: hidden !important; padding-right: 0px; overscroll-behavior: contain; max-height: 425px; }
+.sync-tab-header { display: flex; background: rgba(15, 23, 42, 0.05); padding: 4px; border-radius: 12px; margin-bottom: 12px; flex-shrink: 0; gap: 4px; }
+.sync-tab-header button { flex: 1; border: none; padding: 8px 0; border-radius: 9px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: 0.2s; background: transparent; color: #475569; white-space: nowrap; }
+.sync-spin-icon { animation: spinCircle 1.5s linear infinite; }
+@keyframes spinCircle { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+#syncModal .field input, #sbRegisterModal .field input, #aboutModal .field input, #superPasswordModal .field input { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; }
+#syncModal .field input:focus, #sbRegisterModal .field input:focus, #aboutModal .field input:focus, #superPasswordModal .field input:focus { background: rgba(255, 255, 255, 0.98) !important; border-color: #3b82f6 !important; }
+
+/* 🌟 关于弹窗吸附外观 */
+.floating-about-window { 
+  position: fixed; width: 340px; height: 440px; background: rgba(255, 255, 255, 0.98) !important; 
+  border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 20px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12) !important; 
+  padding: 20px; z-index: 100115; display: none; flex-direction: column; overflow: hidden; 
+  animation: floatingPop 0.25s ease-out; user-select: text !important; -webkit-user-select: text !important; 
+}
+@keyframes floatingPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.floating-about-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0; }
+.floating-about-header h4 { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; }
+.floating-about-content { flex: 1; overflow-y: auto; padding-right: 2px; font-size: 12px; color: #475569; line-height: 1.6; text-align: left; overscroll-behavior: contain; }
+.floating-about-content::-webkit-scrollbar { width: 4px; }
+.floating-about-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 4px; }
+.floating-about-content p { margin-bottom: 10px; }
+.floating-about-content ol, .floating-about-content ul { padding-left: 16px; margin-bottom: 10px; }
+.floating-about-content li { margin-bottom: 5px; }
+
+.modal-close-trigger { cursor: pointer; font-size: 16px; color: #64748b; font-weight: 700; transition: color 0.2s; }
+.modal-close-trigger:hover { color: #475569; }
+
+/* 📁 文件夹对称飞出面板外观 */
+.floating-folder-panel { position: absolute; width: 422px; background: rgba(255, 255, 255, 0.98) !important; border-radius: 20px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important; padding: 18px; z-index: 15000; display: none; flex-direction: column; overflow: hidden; }
+.folder-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-shrink: 0; gap: 8px; }
+.folder-name-input { flex: 1; background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; padding: 6px 10px; border-radius: 8px; outline: none; font-size: 13.5px; font-weight: 700; color: #1e293b; }
+.folder-name-input:focus { background: rgba(255, 255, 255, 0.98) !important; border-color: #3b82f6 !important; }
+
+/* 🛡️ 新增：无痕模式按钮专用样式（弹性自适应展现） */
+.folder-incognito-trigger-btn {
+  display: none; /* 默认隐藏，仅在加密文件夹时显示 */
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  color: #64748b;
+  transition: color 0.2s, transform 0.1s;
+  flex-shrink: 0;
+}
+.folder-incognito-trigger-btn:hover {
+  color: #3b82f6;
+  transform: scale(1.08);
+}
+.folder-incognito-trigger-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ⭐ 将 fixed height 200px 重写为 Flex 弹性充满，消除底部留白并与普通窗口保持完美的像素级对齐 */
+.folder-panel-scrollzone { flex: 1 !important; height: auto !important; overflow-y: auto; overflow-x: hidden !important; padding-right: 2px; position: relative; margin-bottom: 12px; scrollbar-width: thin; overscroll-behavior: contain; }
+.folder-panel-scrollzone::-webkit-scrollbar { width: 4px; }
+.folder-panel-scrollzone::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 4px; }
+.folder-panel-scrollzone.view-grid { display: grid; grid-template-columns: repeat(4, 80px); grid-auto-rows: 88px; column-gap: 22px; row-gap: 24px; align-content: flex-start; justify-content: center; }
+.folder-panel-scrollzone.view-list { display: flex; flex-direction: column; gap: 6px; }
+.folder-panel-scrollzone.view-list .site { width: 100%; flex-direction: row; align-items: center; justify-content: flex-start; height: 38px !important; flex-shrink: 0; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(0,0,0,0.02); border-radius: 8px; padding: 0 10px; gap: 10px; transition: all 0.2s; cursor: pointer; }
+.folder-panel-scrollzone.view-list .site:hover { background: rgba(255, 255, 255, 0.98); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+.folder-panel-scrollzone.view-list .site .card-body { display: none !important; }
+.folder-panel-scrollzone.view-list .site div.site-title-text { text-align: left; margin-top: 0; flex: 1; width: auto; font-size: 13px; font-weight: 600; color: #334155; margin-top: 0; pointer-events: none; }
+
+.folder-panel-footer-actions { width: 100%; display: flex; justify-content: flex-end; align-items: center; flex-shrink: 0; padding-top: 4px; }
+.folder-view-toggle-btn { font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; transition: color 0.2s; background: none; border: none; outline: none; }
+.folder-view-toggle-btn:hover { color: #3b82f6; }
+.folder-lock-trigger-btn { cursor: pointer; font-size: 14px; color: #64748b; transition: color 0.2s; padding: 2px; display: flex; align-items: center; justify-content: center; }
+.folder-lock-trigger-btn:hover { color: #3b82f6; }
+
+/* 📁 托管云盘选择框样式 */
+.webdav-provider-select { width:100%; padding:9px 12px; border:1px solid rgba(0,0,0,0.08); border-radius:8px; outline:none; font-weight:700; color:#1e293b; background:rgba(255,255,255,0.95); font-size:12.5px; transition:all 0.2s; cursor: pointer; }
+.webdav-provider-select:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+
+/* 🔒 手势遮罩 */
+#gestureModal { display: none; position: fixed; top: 0; left: 0; width: 100vw !important; height: 100vh !important; background: rgba(15, 23, 42, 0.3); align-items: center; justify-content: center; z-index: 100030; }
+.gesture-modal-box { background: rgba(255, 255, 255, 0.98) !important; border-radius: 20px; width: 360px; padding: 24px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important; text-align: center; display: flex; flex-direction: column; align-items: center; position: relative; }
+.gesture-tips { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 16px; min-height: 20px; }
+#gestureCanvas { background: transparent; cursor: pointer; margin-bottom: 12px; }
+.gesture-footer-link { font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; text-decoration: none; transition: color 0.2s; margin-top: 6px; }
+.gesture-footer-link:hover { color: #3b82f6; }
+
+#superPasswordModal, #folderPasswordMgrModal { z-index: 100040; }
+
+#folderPanelLeft { left: -12px !important; }
+#folderPanelRight { left: 410px !important; }
+
+/* 🔒 加密两端对齐排版及全新密码弹窗相关样式 */
+.menu-btn-text {
+  display: inline-block;
+  width: auto;
+  text-align: left;
+}
+#setupWizardModal, #unifiedVerifyModal {
+  display: none; position: fixed; top: 0; left: 0; width: 100vw !important; height: 100vh !important;
+  background: rgba(15, 23, 42, 0.45) !important; align-items: center; justify-content: center; z-index: 100050;
+}
+.wizard-card-layout {
+  background: rgba(255, 255, 255, 0.98) !important; border-radius: 20px; width: 440px; height: 490px;
+  padding: 24px 28px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+}
+.verify-card-layout {
+  background: rgba(255, 255, 255, 0.98) !important; border-radius: 20px; width: 340px; height: auto !important;
+  padding: 24px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  position: relative; display: flex; flex-direction: column; overflow: hidden; align-items: center;
+}
+.reset-warning-card-layout {
+  background: rgba(255, 255, 255, 0.98) !important; border-radius: 20px; width: 440px; height: auto !important;
+  padding: 24px 28px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+}
+/* ⭐ 重置窗口字体加大设定 */
+.reset-warning-card-layout h3 { font-size: 17px !important; }
+.reset-warning-card-layout span, .reset-warning-card-layout label { font-size: 14px !important; }
+.reset-warning-card-layout p { font-size: 13px; color: #475569; line-height: 1.5; margin-top: 6px; }
+
+#settings-scroll-container p { font-size: 13px; color: #475569; line-height: 1.4; margin-top: 14px; }
+
+/* ⭐ 下拉悬浮菜单高精样式（解决偏移与视觉对齐问题） */
+.s-cascading-flyout {
+  position: absolute;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  z-index: 99999;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+.s-cascading-flyout button {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.s-cascading-flyout button:hover {
+  background: #f3f4f6;
+  color: #3b82f6;
+}
+</style>
+<script>
+  try {
+    const cachedTheme = localStorage.getItem('s_tab_theme_fallback');
+    if (cachedTheme && cachedTheme !== 'theme-glacier') { 
+      document.documentElement.className = cachedTheme; 
+    } else {
+      document.documentElement.className = 'theme-time';
+    }
+  } catch(e) {}
+</script>
+<script src="i18n.js"></script>
+</head>
+<body class="theme-time">
+
+<!-- 💡 首次安装浏览器原生机制激活引导横幅（内联样式防范冲突） -->
+<div id="firstRunGuideBanner" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; background: #3b82f6; color: #ffffff; z-index: 2000000; text-align: center; padding: 14px 24px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 16px rgba(59,130,246,0.25); align-items: center; justify-content: center; gap: 14px; box-sizing: border-box;">
+  <span data-i18n="first_run_guide">💡 激活提示：为了确保能正常使用“S标签页”的云同步及快捷收藏功能，若浏览器弹出“还原设置”或“改回原来的设置”提示，请务必点击【保持现状】！</span>
+  <button id="btnDismissFirstRun" data-i18n="dismiss_btn" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); color: #ffffff; padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; transition: background 0.2s; outline: none;">我知道了</button>
+</div>
+
+<div class="aurora-bg">
+  <div class="aurora-bg-inner"></div>
+</div>
+
+<div class="marquee-intro-scroller is-collapsed-state" id="marqueeOuterShellContainer">
+  <div class="marquee-text-window" id="marqueeTextWindow">
+    <div class="marquee-intro-inner" id="marqueeRealInnerTrack">
+      <div class="marquee-intro-line" data-i18n="marquee_line_1">• 任意网页按 Alt + S 一秒快速唤出，高效代替繁杂的浏览器收藏夹</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_2">• 支持 Chrome 和 Edge 等不同浏览器之间，快捷收藏数据无缝实时互通</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_3">• 三通道自动云同步，Supabase云数据库、NAS私有云与坚果云等WebDAV云盘实时守护</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_4">• 添加网址与云同步时自动排重，同名文件夹自动安全合并，数据绝不丢失</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_5">• 一键自主开启或关闭搜索历史记录，随时清空痕迹，全方位保护隐私</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_6">• 鼠标悬停卡片即可查看完整名称，支持网格与列表两种视图一键随心切换</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_7">• 文件夹支持设置手势与字符双重密码，日常解锁更便捷，备用验证更安心</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_8">• 挂起卡片左上角手柄即可自由拖拽，支持左右双文件夹打开、互相穿梭归类</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_9">• 加密文件夹支持隐藏网址缩略图、禁用全局搜索检索，最大化保护个人隐私</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_10">• 点击网址时按住 Ctrl 键可在浏览器后台静默打开新页面，不中断当前浏览</div>
+      <div class="marquee-intro-line" data-i18n="marquee_line_11">• 当前主页版本：3.2.3 | 定制信息：SenpaiX定制 | 联系邮箱：senpaix@163.com</div>
+    </div>
+  </div>
+  <span class="marquee-toggle-trigger-btn" id="btnToggleCollapseMarquee" data-i18n="marquee_collapse">收起 ▾</span>
+</div>
+
+<div class="bg-selector-container">
+  <div class="bg-menu">
+    <button data-theme="theme-time" data-i18n="theme_time">时光荏苒</button>
+    <button data-theme="theme-pure" data-i18n="theme_pure">静谧纯白</button>
+  </div>
+  <button class="bg-btn" data-i18n="bg_selector_btn">背景选择</button>
+</div>
+
+<div class="settings-container">
+  <div class="settings-menu">
+    <button id="btnOpenSyncModal">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m11 11 1-1 1 1"/><path d="M12 10v4"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_cloud_sync">云端同步</span>
+    </button>
+    <button id="btnManageSuperPassword">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_enc_mgr">加密管理</span>
+    </button>
+    <button id="btnOpenLanguageModal">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_lang_mgr">语言管理</span>
+    </button>
+    <button id="btnExportAllData">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_export_data">导出数据</span>
+    </button>
+    <button id="btnImportAllData">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_import_data">导入数据</span>
+    </button>
+    <button id="btnOpenOptionsModal">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_other_mgr">其他管理</span>
+    </button>
+    <button id="btnManageExt" style="border-top: 1px dashed rgba(0,0,0,0.05);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_ext_mgr">扩展管理</span>
+    </button>
+    <button id="btnResetAllData" class="btn-reset-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_reset_ext">重置扩展</span>
+    </button>
+    <button id="btnOpenAboutModal">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span class="menu-btn-text" data-i18n="menu_about_ext">关于扩展</span>
+    </button>
+  </div>
+  <button class="settings-btn" data-i18n="settings_btn">设置</button>
+</div>
+
+<div class="main">
+  <h1 data-i18n="app_title_h1">S标签页</h1>
+  
+  <div class="unified-search">
+    <div class="search-engine-icon-container">
+      <img id="currentEngineIcon" src="">
+    </div>
+    <span class="engine-trigger-span" id="lblCurrentEngine">默认 ▾</span>
+    <div class="engine-popup-menu" id="popupEngineMenu"></div>
+    <input id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="输入关键字，回车搜索..." autocomplete="off">
+    <div class="search-suggestions" id="searchSuggestions"></div>
+    <div class="search-history-toggle-btn" id="btnToggleSearchHistoryState" data-i18n-title="search_history_on" title="历史记录已开启，点击后关闭">📜</div>
+    <div class="search-trash-btn" id="btnClearSearchLogs" data-i18n-title="search_trash_title" title="清空搜索记录">🗑️</div>
+    <button class="search-submit" id="btnSearch" data-i18n="btn_search">搜 索</button>
+  </div>
+  
+  <div id="navContainer">
+    <div class="nav-header">
+      <h2><span data-i18n="snav_header_text">S导航</span> <span id="syncIndicator" style="display: none; font-size: 13px; color: #3b82f6; margin-left: 6px;">🔄</span></h2>
+      
+      <div class="snav-search-wrapper">
+        <input type="text" id="snavSearchInput" data-i18n-placeholder="snav_search_placeholder" placeholder="键入关键字，搜索已添加的网页" autocomplete="off">
+        <div id="snavSearchResults" class="snav-search-results"></div>
+      </div>
+    </div>
+    
+    <span class="snav-shortcut-tips" data-i18n="snav_shortcut_tips">💡 在任意网页按下 Alt + S （或鼠标左键点击扩展图标）即可快速将其添加至 S导航</span>
+    
+    <div class="grid" id="navGrid"></div>
+
+    <div class="floating-folder-panel" id="folderPanelLeft">
+      <div class="folder-panel-header">
+        <input class="folder-name-input" data-i18n-placeholder="folder_name_placeholder" placeholder="输入文件夹名称...（回车确定保存）">
+        <span class="folder-incognito-trigger-btn" data-i18n-title="folder_incognito_tooltip"></span>
+        <span class="folder-lock-trigger-btn" data-i18n-title="folder_lock_tooltip">🔓</span>
+        <span class="modal-close-trigger btn-close-folder-panel" data-i18n-title="btn_close" style="font-size:14px;">✕</span>
+      </div>
+      <div class="folder-panel-scrollzone view-grid"></div>
+      
+      <div class="folder-panel-footer-actions" style="display: flex; flex-direction: column; gap: 8px; width: 100%; border-top: 1px solid rgba(0,0,0,0.04); padding-top: 8px; flex-shrink: 0; align-items: flex-start !important;">
+        <div class="folder-encrypt-line-1" style="display: none; align-items: center; gap: 6px;" data-i18n-title="hint_disable_thumbnails" title="勾选此选项后，将禁止该加密文件夹内显示网页卡片的缩略图，最大程度保护您的隐私。">
+          <input type="checkbox" class="chk-hide-thumbnails" style="width: auto; cursor: pointer;">
+          <span style="font-size: 11.5px; font-weight: 700; color: #475569; cursor: pointer;" data-i18n="chk_hide_thumbnails">禁用该加密文件夹内网页缩略图</span>
+        </div>
+        <div class="folder-encrypt-line-2" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="folder-encrypt-line-2-left" style="display: none; align-items: center; gap: 6px;" data-i18n-title="hint_disable_search" title="勾选表示不可通过S导航搜索栏直接检索该加密文件夹内的网页，取消则可以检索到">
+            <input type="checkbox" class="chk-disable-search" style="width: auto; cursor: pointer;">
+            <span style="font-size: 11.5px; font-weight: 700; color: #475569; cursor: pointer;" data-i18n="chk_disable_search">禁用在S导航搜索框内检索该加密文件夹</span>
+          </div>
+          <button class="folder-view-toggle-btn" style="margin-left: auto;" data-i18n="folder_view_toggle">列表视图 ☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="floating-folder-panel" id="folderPanelRight">
+      <div class="folder-panel-header">
+        <input class="folder-name-input" data-i18n-placeholder="folder_name_placeholder" placeholder="输入文件夹名称...（回车确定保存）">
+        <span class="folder-incognito-trigger-btn" data-i18n-title="folder_incognito_tooltip"></span>
+        <span class="folder-lock-trigger-btn" data-i18n-title="folder_lock_tooltip">🔓</span>
+        <span class="modal-close-trigger btn-close-folder-panel" data-i18n-title="btn_close" style="font-size:14px;">✕</span>
+      </div>
+      <div class="folder-panel-scrollzone view-grid"></div>
+      
+      <div class="folder-panel-footer-actions" style="display: flex; flex-direction: column; gap: 8px; width: 100%; border-top: 1px solid rgba(0,0,0,0.04); padding-top: 8px; flex-shrink: 0; align-items: flex-start !important;">
+        <div class="folder-encrypt-line-1" style="display: none; align-items: center; gap: 6px;" data-i18n-title="hint_disable_thumbnails" title="勾选此选项后，将禁止该加密文件夹内显示网页卡片的缩略图，最大程度保护您的隐私。">
+          <input type="checkbox" class="chk-hide-thumbnails" style="width: auto; cursor: pointer;">
+          <span style="font-size: 11.5px; font-weight: 700; color: #475569; cursor: pointer;" data-i18n="chk_hide_thumbnails">禁用该加密文件夹内网页缩略图</span>
+        </div>
+        <div class="folder-encrypt-line-2" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="folder-encrypt-line-2-left" style="display: none; align-items: center; gap: 6px;" data-i18n-title="hint_disable_search" title="勾选表示不可通过S导航搜索栏直接检索该加密文件夹内的网页，取消则可以检索到">
+            <input type="checkbox" class="chk-disable-search" style="width: auto; cursor: pointer;">
+            <span style="font-size: 11.5px; font-weight: 700; color: #475569; cursor: pointer;" data-i18n="chk_disable_search">禁用在S导航搜索框内检索该加密文件夹</span>
+          </div>
+          <button class="folder-view-toggle-btn" style="margin-left: auto;" data-i18n="folder_view_toggle">列表视图 ☰</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<input type="file" id="hiddenImportAllData" accept=".json" style="display: none;">
+
+<div id="siteModal" class="s-fixed-modal-mask">
+  <div class="modal-box">
+    <h3 id="modalTitle" data-i18n="modal_edit_title">修改名称</h3>
+    <div class="field" style="margin-top:14px;">
+      <label data-i18n="label_name">名称</label>
+      <input id="modalName" data-i18n-placeholder="placeholder_example_bili" placeholder="例如：哔哩哔哩">
+    </div>
+    <div class="field" id="modalUrlField">
+      <label data-i18n="label_url">网址</label>
+      <input id="modalUrl" placeholder="https://...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="btnCloseModal" data-i18n="btn_cancel">取消</button>
+      <button class="btn-confirm" id="btnConfirmModal" data-i18n="btn_confirm_save">确认保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="engineModal" class="s-fixed-modal-mask">
+  <div class="modal-box">
+    <h3 data-i18n="engine_modal_title">添加自定义搜索引擎</h3>
+    <div class="field" style="margin-top:14px;">
+      <label data-i18n="engine_name_label">搜索引擎名称</label>
+      <input id="newEngineName" data-i18n-placeholder="placeholder_example_taobao" placeholder="例如：淘宝">
+    </div>
+    <div class="field">
+      <label data-i18n="engine_url_label">搜索链接 (用 %s 代替关键字)</label>
+      <input id="newEngineUrl" placeholder="https://s.taobao.com/search?q=%s">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="btnCancelEngineModal" data-i18n="btn_cancel">取消</button>
+      <button class="btn-confirm" id="btnConfirmEngineModal" data-i18n="btn_confirm_engine">保存引擎</button>
+    </div>
+  </div>
+</div>
+
+<div id="syncModal">
+  <div class="sync-card-layout">
+    <div class="s-head-title-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #1e293b;" data-i18n="menu_cloud_sync">云端同步</h3>
+      <span id="btnCloseSyncModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+
+    <div class="sync-tab-header">
+      <button id="btnTabSyncBrowser" data-i18n="tab_sync_supabase">Supabase同步</button>
+      <button id="btnTabSyncNas" data-i18n="tab_sync_nas">NAS私有云</button>
+      <button id="btnTabSyncWebdav" data-i18n="tab_sync_webdav">WebDAV云盘</button>
+    </div>
+
+    <div class="sync-internal-scroller">
+      <div id="panelSyncBrowser">
+        <div id="browserLoggedOutView" style="display: block;">
+          <div class="channel-mind-banner">
+            <p data-i18n="supabase_logged_out_banner">本通道为普通用户设计。您只需注册一个账号，并在常用邮箱中激活确认邮件，即可快捷登录并享受云端多端自动双向同步守护。详情可点击下方“关于”了解。</p>
+          </div>
+          <div id="supabaseLoginForm" style="display: block;">
+            <div class="field">
+              <input id="syncSupabaseEmail" data-i18n-placeholder="placeholder_email" placeholder="账号（Email），例如：yourname@example.com">
+            </div>
+            <div class="field" style="margin-top: 14px;">
+              <input id="syncSupabasePassword" type="password" data-i18n-placeholder="placeholder_password" placeholder="请输入密码">
+            </div>
+          </div>
+        </div>
+
+        <div id="browserLoggedInView" style="display: none;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="display: inline-block; width: 8px; height: 8px; background-color: #10b981; border-radius: 50%;"></span>
+              <span style="font-size: 13.5px; font-weight: 800; color: #10b981;" data-i18n="status_connected">服务连接状态：已登录</span>
+            </div>
+            <div style="font-size: 12px; color: #475569; line-height: 1.8;">
+              <div style="display: flex; justify-content: space-between; margin-top: 4px;"><span style="font-weight: 700;" data-i18n="label_email">账号（Email）:</span> <span id="infoBrowserUser"></span></div>
+            </div>
+          </div>
+
+          <div class="field" style="display: flex; flex-direction: column; gap: 6px; margin-top: 14px; margin-bottom: 14px; padding: 0 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input id="syncBrowserEnableLoggedIn" type="checkbox" style="width: auto; cursor: pointer;">
+              <label for="syncBrowserEnableLoggedIn" style="margin-bottom: 0; cursor: pointer; font-size: 13px; font-weight: 700; color: #475569;" data-i18n="enable_auto_sync">启用自动同步</label>
+            </div>
+            <p style="font-size: 11.5px; color: #64748b; line-height: 1.5; margin: 0; font-weight: 600;" data-i18n="auto_sync_hint">勾选此选项，点击“保存并关闭”后数据会在本地 and 云端自动实时同步对齐。</p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <button id="btnBrowserForceUpload" class="btn-confirm" style="background: #3b82f6; font-size: 12px; padding: 8px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; color: #fff; width: 100%;" data-i18n="btn_force_upload">强行上传</button>
+              <p style="font-size: 11px; color: #64748b; line-height: 1.4; margin: 0; font-weight: 600; text-align: center;" data-i18n="force_upload_hint">将本地数据强行上传至服务器覆盖服务器现有数据</p>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <button id="btnBrowserForceDownload" class="btn-confirm" style="background: #3b82f6; font-size: 12px; padding: 8px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; color: #fff; width: 100%;" data-i18n="btn_force_download">强行下载</button>
+              <p style="font-size: 11px; color: #64748b; line-height: 1.4; margin: 0; font-weight: 600; text-align: center;" data-i18n="force_download_hint">将服务器数据强行下载至本地覆盖本地现有数据</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panelSyncNas" style="display: none;">
+        <div id="nasLoggedOutView" style="display: block;">
+          <div class="channel-mind-banner">
+            <p data-i18n="nas_logged_out_banner">本通道专为群晖 NAS、威联通 NAS、华硕路由器、自建 OpenWrt 等部署了 WebDAV 服务的高级用户设计。登录后系统会自动建立同步文件夹，详情可点击下方“关于”了解。</p>
+          </div>
+          <div class="field">
+            <input id="syncNasAddress" data-i18n-placeholder="placeholder_nas_address" placeholder="地址/域名，例如：192.168.1.100">
+          </div>
+          <div class="field" style="display: flex; gap: 10px; margin-top: 10px;">
+            <input id="syncNasPort" data-i18n-placeholder="placeholder_nas_port" placeholder="端口" style="flex: 1;">
+            <input id="syncNasPath" data-i18n-placeholder="placeholder_nas_path" placeholder="共享路径（选填，留空则默认nas共享目录）" style="flex: 2;">
+          </div>
+          <div style="font-size: 11px; color: #475569; font-weight: 600; margin-top: 4px; margin-bottom: 10px; line-height: 1.3;">
+            <span data-i18n="nas_preview_title">实时预览：</span><span id="lblNasUrlPreview" style="color: #3b82f6; word-break: break-all;">https://192.168.1.100:5006/home/STabSync/</span>
+          </div>
+          <div class="field" style="margin-top: 10px;">
+            <input id="syncNasUsername" data-i18n-placeholder="placeholder_username" placeholder="用户名">
+          </div>
+          <div class="field" style="margin-top: 10px;">
+            <input id="syncNasPassword" type="password" data-i18n-placeholder="placeholder_password" placeholder="密码">
+          </div>
+        </div>
+
+        <div id="nasLoggedInView" style="display: none;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="display: inline-block; width: 8px; height: 8px; background-color: #10b981; border-radius: 50%;"></span>
+              <span style="font-size: 13.5px; font-weight: 800; color: #10b981;" data-i18n="status_connected">服务连接状态：已登录</span>
+            </div>
+            <div style="font-size: 12px; color: #475569; line-height: 1.8;">
+              <div style="display: flex; justify-content: space-between;"><span style="font-weight: 700;" data-i18n="label_nas_target_url">计算所得终点:</span> <span id="infoNasUrl" style="word-break: break-all; text-align: right; max-width: 70%;"></span></div>
+              <div style="display: flex; justify-content: space-between; margin-top: 4px;"><span style="font-weight: 700;" data-i18n="label_nas_user">NAS 账户名:</span> <span id="infoNasUser"></span></div>
+            </div>
+          </div>
+
+          <div class="field" style="display: flex; flex-direction: column; gap: 6px; margin-top: 14px; margin-bottom: 14px; padding: 0 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input id="syncNasEnableLoggedIn" type="checkbox" style="width: auto; cursor: pointer;">
+              <label for="syncNasEnableLoggedIn" style="margin-bottom: 0; cursor: pointer; font-size: 13px; font-weight: 700; color: #475569;" data-i18n="enable_auto_sync">启用自动同步</label>
+            </div>
+            <p style="font-size: 11.5px; color: #64748b; line-height: 1.5; margin: 0; font-weight: 600;" data-i18n="auto_sync_hint">
+              勾选此选项，点击“保存并关闭”后数据会在本地 and 云端自动实时同步对齐。
+            </p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <button id="btnNasForceUpload" class="btn-confirm" style="background: #3b82f6; font-size: 12px; padding: 8px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; color: #fff; width: 100%;" data-i18n="btn_force_upload">强行上传</button>
+              <p style="font-size: 11px; color: #64748b; line-height: 1.4; margin: 0; font-weight: 600; text-align: center;" data-i18n="force_upload_hint">将本地数据强行上传至服务器覆盖服务器现有数据</p>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <button id="btnNasForceDownload" class="btn-confirm" style="background: #3b82f6; font-size: 12px; padding: 8px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; color: #fff; width: 100%;" data-i18n="btn_force_download">强行下载</button>
+              <p style="font-size: 11px; color: #64748b; line-height: 1.4; margin: 0; font-weight: 600; text-align: center;" data-i18n="force_download_hint">将服务器数据强行下载至本地覆盖本地现有数据</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panelSyncWebdav" style="display: none;">
+        <div id="webdavLoggedOutView" style="display: block;">
+          <div class="channel-mind-banner">
+            <p data-i18n="webdav_logged_out_banner">本通道专为使用支持标准 WebDAV 协议的第三方云盘的用户设计。开启后可安全对齐数据。</p>
+          </div>
+          <div class="field">
+            <select id="webdavProviderSelect" class="webdav-provider-select">
+              <option value="" disabled selected style="display:none;" data-i18n="select_webdav_provider">请选择云盘服务提供商</option>
+              <option value="jianguoyun" data-i18n="provider_jianguo">坚果云</option>
+              <option value="koofr">Koofr</option>
+              <option value="yandex">Yandex Disk</option>
+              <option value="custom" data-i18n="provider_custom">其他第三方（自定义）</option>
+            </select>
+          </div>
+          <div class="field" style="margin-top: 12px;">
+            <input id="syncWebdavUrl" data-i18n-placeholder="placeholder_webdav_address" placeholder="WebDav地址">
+            <div id="lblWebdavAppPasswordGuide" style="font-size: 11px; color: #475569; font-weight: 600; margin-top: 5px; line-height: 1.4; background: rgba(0,0,0,0.02); padding: 6px 8px; border-radius: 6px;" data-i18n="jianguo_password_guide">
+              🔑 密码获取指引：请登录坚果云网页版 ➔ 账户信息 ➔ 安全设置 ➔ 第三方应用管理 ➔ 添加应用生成随机专用授权密码。
+            </div>
+          </div>
+          <div class="field" style="margin-top: 12px;">
+            <input id="syncWebdavUsername" data-i18n-placeholder="placeholder_username" placeholder="用户名">
+          </div>
+          <div class="field" style="margin-top: 12px;">
+            <input id="syncWebdavPassword" type="password" data-i18n-placeholder="placeholder_password" placeholder="密码/应用独立授权秘钥">
+          </div>
+        </div>
+
+        <div id="webdavLoggedInView" style="display: none;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="display: inline-block; width: 8px; height: 8px; background-color: #10b981; border-radius: 50%;"></span>
+              <span style="font-size: 13.5px; font-weight: 800; color: #10b981;" data-i18n="status_connected">服务连接状态：已登录</span>
+            </div>
+            <div style="font-size: 12px; color: #475569; line-height: 1.8;">
+              <div style="display: flex; justify-content: space-between;"><span style="font-weight: 700;" data-i18n="label_webdav_target_url">服务器锁定地址:</span> <span id="infoWebdavUrl" style="word-break: break-all; text-align: right; max-width: 70%;"></span></div>
+              <div style="display: flex; justify-content: space-between; margin-top: 4px;"><span style="font-weight: 700;" data-i18n="label_webdav_user">账户用户名:</span> <span id="infoWebdavUser"></span></div>
+            </div>
+          </div>
+
+          <div class="field" style="display: flex; flex-direction: column; gap: 6px; margin-top: 14px; margin-bottom: 14px; padding: 0 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input id="syncWebdavEnableLoggedIn" type="checkbox" style="width: auto; cursor: pointer;">
+              <label for="syncWebdavEnableLoggedIn" style="margin-bottom: 0; cursor: pointer; font-size: 13px; font-weight: 700; color: #475569;" data-i18n="enable_auto_sync">启用自动同步</label>
+            </div>
+            <p style="font-size: 11.5px; color: #64748b; line-height: 1.5; margin: 0; font-weight: 600;" data-i18n="auto_sync_hint">
+              勾选此选项，点击“保存并关闭”后数据会在本地 and 云端自动实时同步对齐。
+            </p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <button id="btnWebdavForceUpload" class="btn-confirm" style="background: #3b82f6; font-size: 12px; padding: 8px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; color: #fff; width: 100%;" data-i18n="btn_force_upload">强行上传</button>
+              <p style="font-size: 11px; color: #64748b; line-height: 1.4; margin: 0; font-weight: 600; text-align: center;" data-i18n="force_upload_hint">将本地数据强行上传至服务器覆盖服务器现有数据</p>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <button id="btnWebdavForceDownload" class="btn-confirm" style="background: #3b82f6; font-size: 12px; padding: 8px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; color: #fff; width: 100%;" data-i18n="btn_force_download">强行下载</button>
+              <p style="font-size: 11px; color: #64748b; line-height: 1.4; margin: 0; font-weight: 600; text-align: center;" data-i18n="force_download_hint">将服务器数据强行下载至本地覆盖本地现有数据</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="syncStatusMsg" style="font-size:12px; color:#64748b; margin-top: 6px; text-align: left; font-weight: 600; min-height: 20px; flex-shrink: 0;"></div>
+
+    <div class="modal-footer" id="syncCommonModalFooter" style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.04); flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div id="footerLinksContainer" style="display: flex; gap: 14px; align-items: center;">
+        <span class="sb-about-anchor-trigger" id="footerAboutAnchor" style="font-size: 12.5px; font-weight: 700; color: #64748b; cursor: pointer;" data-i18n="btn_about">关于</span>
+        <a href="#" id="lnkGoToRegister" style="font-size: 12.5px; font-weight: 700; color: #3b82f6; text-decoration: none;" data-i18n="register_link_btn">没有账号？进行注册</a>
+        <button class="btn-cancel" id="btnExitLoggedInModal" style="background: #ef4444; color: white; display: none; width: 110px; margin-top: 0; font-weight: 700; transition: background 0.2s;" data-i18n="btn_exit_login">退出登录</button>
+      </div>
+      <button class="btn-confirm" id="btnConfirmSyncModal" style="background: #3b82f6; color: white; width: 110px; margin-top: 0; transition: background 0.2s, color 0.2s;" data-i18n="btn_login_submit">登 录</button>
+      <button class="btn-confirm" id="btnSaveAndCloseModal" style="background: #3b82f6; color: white; display: none; width: 110px; margin-top: 0; font-weight: 700; transition: background 0.2s;" data-i18n="btn_save_and_close">保存并关闭</button>
+    </div>
+  </div>
+</div>
+
+<div id="sbRegisterModal">
+  <div class="ui-modal-body">
+    <span class="modal-close-trigger" id="closeRegisterModalTrigger" data-i18n-title="btn_close" style="position: absolute; top: 24px; right: 28px;">✕</span>
+    <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 24px; flex-shrink: 0;" data-i18n="register_modal_title">Supabase云同步注册</h3>
+    
+    <div class="sync-internal-scroller">
+      <div id="supabaseRegisterForm" style="display: block;">
+        <div class="field">
+          <label data-i18n="register_email_label">注册邮箱账号 (Email)</label>
+          <input id="regSupabaseEmail" data-i18n-placeholder="register_email_placeholder" placeholder="请输入您的邮箱">
+        </div>
+        <div class="field" style="margin-top: 16px;">
+          <label data-i18n="register_pwd_label">设置新密码</label>
+          <input id="regSupabasePassword" type="password" data-i18n-placeholder="register_pwd_placeholder" placeholder="请输入密码">
+        </div>
+        <div class="field" style="margin-top: 16px;">
+          <label data-i18n="register_confirm_label">确认核对密码</label>
+          <input id="regSupabaseConfirm" type="password" data-i18n-placeholder="register_confirm_placeholder" placeholder="请再次输入密码">
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid rgba(0,0,0,0.04); padding-top: 14px; flex-shrink: 0;">
+      <button id="btnExecuteRegister" class="btn-confirm" style="width: 100%; height: 38px; font-size: 13px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;" data-i18n="btn_register_submit">注 册</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+        <span class="sb-about-anchor-trigger" style="font-size: 12.5px; font-weight: 700; color: #64748b; cursor: pointer;" data-i18n="btn_about">关于</span>
+        <a href="#" id="lnkBackToLogin" style="font-size: 12.5px; font-weight: 700; color: #3b82f6; text-decoration: none;" data-i18n="back_to_login_link">← 已有账号，返回登录</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="optionsModal" class="s-fixed-modal-mask">
+  <div class="modal-box" style="width: 440px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;" data-i18n="menu_other_mgr">其他管理</h3>
+      <span id="btnCloseOptionsModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+    <div class="field" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+      <input id="optEnableMarquee" type="checkbox" style="width: auto; cursor: pointer;" checked>
+      <label for="optEnableMarquee" style="margin-bottom: 0; cursor: pointer; font-size: 14px; font-weight: 700; color: #475569;" data-i18n="opt_enable_marquee">在S标签页右下角轮播展示“功能介绍”</label>
+    </div>
+    <div class="field" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+      <input id="optEnableShortcutTips" type="checkbox" style="width: auto; cursor: pointer;">
+      <label for="optEnableShortcutTips" style="margin-bottom: 0; cursor: pointer; font-size: 14px; font-weight: 700; color: #475569;" data-i18n="opt_enable_shortcut_tips">在网页卡片上方显示“快捷键添加到导航的提示”</label>
+    </div>
+	<div class="field" style="margin-top: 18px; border-top: 1px dashed rgba(0,0,0,0.06); padding-top: 14px;">
+  <label style="display: block; font-size: 14px; font-weight: 700; margin-bottom: 10px; color: #475569;" data-i18n="sync_mode_title">数据同步模式</label>
+  <div style="display: flex; flex-direction: column; gap: 12px; padding-left: 4px;">
+    <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+      <input type="radio" name="optSyncMode" id="syncModePassive" value="passive" style="width: auto; margin-top: 3px; cursor: pointer;" checked>
+      <div style="display: flex; flex-direction: column;">
+        <span style="font-size: 13.5px; font-weight: 700; color: #1e293b;" data-i18n="sync_mode_passive_title">间歇按需同步（默认）</span>
+        <span style="font-size: 11px; color: #64748b; line-height: 1.4; font-weight: 600; margin-top: 2px;" data-i18n="sync_mode_passive_desc">
+          零后台待机消耗。仅在启动浏览器、新建标签页、切换回当前页面或手动刷新时对齐，支持点击S导航标题右侧 🔄 手动同步。
+        </span>
+      </div>
+    </label>
+    <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+      <input type="radio" name="optSyncMode" id="syncModeActive" value="active" style="width: auto; margin-top: 3px; cursor: pointer;">
+      <div style="display: flex; flex-direction: column;">
+        <span style="font-size: 13.5px; font-weight: 700; color: #1e293b;" data-i18n="sync_mode_active_title">实时自动同步</span>
+        <span style="font-size: 11px; color: #64748b; line-height: 1.4; font-weight: 600; margin-top: 2px;" data-i18n="sync_mode_active_desc">
+          后台自动周期探针对齐，实现秒级高一致性，但会产生持续的网络与后台开销。
+        </span>
+      </div>
+    </label>
+  </div>
+</div>
+
+    <p style="font-size: 13px; color: #475569; line-height: 1.4; margin-top: 14px;" data-i18n="opt_more_features_hint">更多个性化选项将陆续推出，为您打造更极致的极简主页游览体验。</p>
+    <div class="modal-footer" style="margin-top: 24px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.04);">
+      <button class="btn-cancel" id="btnCancelOptionsModal" style="padding: 9px 16px; font-size: 13px; font-weight: 700;" data-i18n="btn_cancel">取消</button>
+      <button class="btn-confirm" id="btnSaveOptions" style="padding: 9px 20px; font-size: 13px; font-weight: 700; background: #3b82f6; color: #fff;" data-i18n="btn_save_settings">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<div id="languageModal" class="s-fixed-modal-mask">
+  <div class="modal-box">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;" data-i18n="menu_lang_mgr">语言管理</h3>
+      <span id="btnCloseLanguageModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+    <div class="field" style="margin-top: 14px;">
+      <label data-i18n="select_language_label">选择语言</label>
+      <select id="userLanguageSelect" class="webdav-provider-select">
+        <option value="auto" data-i18n="lang_option_auto">自动检测 (Auto)</option>
+        <option value="zh_CN">简体中文 (Chinese Simplified)</option>
+        <option value="en">English</option>
+        <option value="ja">日本語 (Japanese)</option>
+        <option value="ko">한국어 (Korean)</option>
+        <option value="de">Deutsch (German)</option>
+        <option value="ru">Русский (Russian)</option>
+        <option value="fr">Français (French)</option>
+        <option value="it">Italiano (Italian)</option>
+      </select>
+    </div>
+    <div class="modal-footer" style="margin-top: 24px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.04);">
+      <button class="btn-cancel" id="btnCancelLanguageModal" style="padding: 9px 16px; font-size: 13px; font-weight: 700;" data-i18n="btn_cancel">取消</button>
+      <button class="btn-confirm" id="btnConfirmLanguageModal" style="padding: 9px 20px; font-size: 13px; font-weight: 700; background: #3b82f6; color: #fff;" data-i18n="btn_confirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<div id="aboutModal">
+  <div class="about-card-layout">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-shrink: 0;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #1e293b;" data-i18n="about_modal_title">关于 S标签页 (STab)</h3>
+      <span id="btnCloseAboutModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+    
+    <div class="sync-internal-scroller" style="font-size: 12.5px; color: #475569; line-height: 1.7; text-align: left; padding-right: 4px;">
+      <p style="margin-bottom: 12px;" data-i18n="about_p1">欢迎使用由SenpaiX亲自打磨的浏览器主页。本扩展完美融合了“网址导航”与“快捷收藏”双重核心功能，让您的网络游览既干净又高效。</p>
+      <p style="font-weight: 800; color: #1e293b; margin-top: 14px; margin-bottom: 6px;" data-i18n="about_features_title">🛠️ 核心功能与特色介绍：</p>
+      <ul style="padding-left: 16px; margin-bottom: 12px;">
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_1">网页快捷收藏 (Alt + S)</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_2">三通道安全云同步</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_3">多浏览器无缝互通</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_4">字符与手势双重防护</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_5">加密文件夹隐私强化</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_6">智能防重与无损合并</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_7">图标智能获取与轮切</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_8">小手拖拽与穿梭归类</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_9">视图切换与长悬停提示</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_10">搜索历史与隐私自主</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_feature_11">后台静默多开网页</li>
+      </ul>
+
+      <p style="font-weight: 800; color: #1e293b; margin-top: 14px; margin-bottom: 6px;" data-i18n="about_changelog_title">🆕 新版本更新日志：</p>
+      <ul style="padding-left: 16px; margin-bottom: 12px;">
+        <li style="margin-bottom: 6px;" data-i18n="about_changelog_li1"><strong>优化云同步机制</strong>：引入“服务器时钟偏差校准”与“LWW（最新写入生效）时间戳对比”算法...</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_changelog_li2"><strong>右键菜单支持</strong>：在任意网页右键空白处，新增“添加至S导航”功能...</li>
+        <li style="margin-bottom: 6px;" data-i18n="about_changelog_li3">如果快捷键alt+s失效...</li>
+      </ul>
+      
+      <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed rgba(0,0,0,0.06); font-size: 12px; color: #475569; line-height: 1.6;">
+        <div><span style="font-weight: 700; color: #3b82f6;" data-i18n="about_version_label">版本号:</span> <span style="font-weight: 700; color: #3b82f6;">3.2.3</span></div>
+        <div style="margin-top: 2px;"><span style="font-weight: 700; color: #475569;" data-i18n="about_info_label">定制信息:</span> <span data-i18n="about_info_val">by：SenpaiX定制</span></div>
+        <div style="margin-top: 2px;"><span style="font-weight: 700; color: #475569;" data-i18n="about_contact_label">联系方式:</span> <a href="#" id="aboutEmailLink" style="color: #3b82f6; text-decoration: none; font-weight: 700;">senpaix@163.com</a></div>
+      </div>
+
+      <div style="margin-top: 18px; padding-top: 16px; border-top: 1px dashed rgba(0,0,0,0.06); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div id="rewardContainer" style="display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;">
+          <button id="btnShowReward" style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 8px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s;" data-i18n="btn_support_author">☕ 赞赏支持作者 (自愿)</button>
+        </div>
+        <div style="font-size: 11.5px; color: #475569; line-height: 1.6; max-width: 380px;">
+          <p style="margin: 0 0 3px 0; color: #475569; font-weight: 700;" data-i18n="support_text_p1">如果这个扩展帮到了你，可以自愿打赏支持作者。</p>
+          <p style="margin: 0; font-weight: 600;" data-i18n="support_text_p2">打赏完全自愿，不影响 any 支付信息。</p>
+          <p style="margin: 0; font-size: 10.5px; color: #64748b;" data-i18n="support_text_p3">支付由微信完成，本扩展不会收集、保存 or 处理 any 支付信息。</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer" style="margin-top: 14px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.04); flex-shrink: 0;">
+      <button class="btn-confirm" id="btnCloseAboutModalOk" style="width: 100%; height: 38px; margin: 0;" data-i18n="btn_understands">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<div id="superPasswordModal">
+  <div class="super-pwd-card-layout">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;" data-i18n="menu_enc_mgr">加密管理</h3>
+      <span id="btnCloseSuperPasswordModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+    
+    <!-- 💡 未设置密码提示区 -->
+    <div id="encNoPwdWarning" style="display: none; font-size: 13.5px !important; color: #475569; line-height: 1.6; text-align: left; background: rgba(59, 130, 246, 0.06); border-left: 3.5px solid #3b82f6; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-weight: 600;">
+      <span data-i18n="enc_no_pwd_warning_p1">你还未设置过密码，</span><a href="#" id="lnkStartSetupWizard" style="color: #3b82f6; text-decoration: underline; font-weight: 800;" data-i18n="click_here_to_setup">点击此处进行设置</a><span data-i18n="enc_no_pwd_warning_p2">，以保证隐私安全。</span><br>
+      <span data-i18n="enc_system_hint">本扩展的加密系统由字符密码 and 手势密码组成...</span>
+    </div>
+
+    <!-- 🔒 已设置密码提示区 -->
+    <div id="encHasPwdView" style="display: none; font-size: 13.5px !important; color: #475569; line-height: 1.6; text-align: left; background: rgba(16, 185, 129, 0.06); border-left: 3.5px solid #10b981; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-weight: 600;" data-i18n="enc_has_pwd_view">
+      你已经设置了字符密码 and 手势密码，字符/手势密码均可以对文件夹的加密/解锁...
+    </div>
+
+    <!-- ⚙️ 更改密码的操作区 -->
+    <div id="encActionButtonsBlock" class="sync-internal-scroller" style="flex: 1; display: none; flex-direction: column; gap: 14px; padding-top: 10px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.02); padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.04);">
+        <button id="btnActionChangeCharPwd" class="btn-confirm" style="margin: 0; background: rgba(255, 255, 255, 0.2) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; color: #334155 !important; font-size: 12.5px; padding: 8px 16px; font-weight: 700; box-shadow: none;" data-i18n="btn_change_char_pwd">更改字符密码</button>
+        <span id="lnkShowCharPwdHint" style="font-size: 12px; color: #64748b; cursor: pointer; font-weight: 700; text-decoration: underline;" data-i18n="btn_char_pwd_hint">密码提示</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.02); padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.04);">
+        <button id="btnActionChangeGesturePwd" class="btn-confirm" style="margin: 0; background: rgba(255, 255, 255, 0.2) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; color: #334155 !important; font-size: 12.5px; padding: 8px 16px; font-weight: 700; box-shadow: none;" data-i18n="btn_change_gesture_pwd">更改手势密码</button>
+        <span id="lnkShowGesturePwdHint" style="font-size: 12px; color: #64748b; cursor: pointer; font-weight: 700; text-decoration: underline;" data-i18n="btn_gesture_pwd_hint">手势提示</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.02); padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.04);">
+        <button id="btnActionRemoveGlobalEncryption" class="btn-confirm" style="margin: 0; background: #ef4444 !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; color: #ffffff !important; font-size: 12.5px; padding: 8px 16px; font-weight: 700; box-shadow: none;" data-i18n="btn_remove_global_encryption">删除已设置的加密</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 📦 全新密码设置步骤向导 Modal -->
+<div id="setupWizardModal">
+  <div class="wizard-card-layout">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;" data-i18n="wizard_modal_title">密码设置步骤</h3>
+      <span id="btnCloseSetupWizard" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+
+    <!-- 步骤一：字符密码设置 -->
+    <div id="wizardStep1" class="sync-internal-scroller" style="flex: 1; display: flex; flex-direction: column;">
+      <div class="field" style="margin-bottom:14px;">
+        <input id="wizardCharPwd" type="password" data-i18n-placeholder="placeholder_char_pwd" placeholder="请输入任何字符、数字格式的密码，不限制位数">
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <input id="wizardCharPwdConfirm" type="password" data-i18n-placeholder="placeholder_char_pwd_confirm" placeholder="请再次输入密码以核对">
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <input id="wizardCharPwdHint" type="text" data-i18n-placeholder="placeholder_char_pwd_hint_setting" placeholder="密码提示（选填），以便忘记密码时的提醒">
+      </div>
+      <div class="modal-footer">
+        <button id="btnWizardStep1Next" class="btn-confirm" data-i18n="btn_next_step">下一步</button>
+      </div>
+    </div>
+
+    <!-- 步骤二：手势密码设置 -->
+    <div id="wizardStep2" class="sync-internal-scroller" style="flex: 1; display: none; flex-direction: column; align-items: center;">
+      <div id="wizardGestureTips" class="gesture-tips" data-i18n="wizard_gesture_tips">请绘制自定义新密码手势</div>
+      <canvas id="wizardGestureCanvas" width="240" height="240" style="border:1px solid rgba(0,0,0,0.06); border-radius:12px; background:rgba(0,0,0,0.01);"></canvas>
+      <div class="field" style="width: 100%; margin-top: 10px;">
+        <input id="wizardGestureHint" type="text" data-i18n-placeholder="placeholder_gesture_pwd_hint_setting" placeholder="手势密码提示（选填），以便忘记手势时提醒">
+      </div>
+      <div class="modal-footer" style="width: 100%; margin-top: 20px;">
+        <button id="btnWizardStep2Next" class="btn-confirm" data-i18n="btn_next_step">下一步</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 📦 全新三合一统一验证 Modal -->
+<div id="unifiedVerifyModal">
+  <div class="verify-card-layout">
+    <span id="btnCloseUnifiedVerify" class="modal-close-trigger" data-i18n-title="btn_close" style="position: absolute; top: 14px; right: 18px; font-size: 14px; opacity: 0.6; cursor: pointer;">✕</span>
+    <div id="unifiedVerifyTips" style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 6px; text-align: center;" data-i18n="verify_title">密码校验</div>
+    <div id="unifiedVerifySubTips" style="font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 12px; text-align: center; max-width: 90%;" data-i18n="verify_subtitle">输入已设置的手势密码或字符密码</div>
+    <canvas id="unifiedVerifyCanvas" width="240" height="240" style="background: transparent; cursor: pointer; margin-bottom: 6px;"></canvas>
+    
+    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding: 0 4px;">
+      <span id="btnUnifiedGestureHint" style="font-size: 11.5px; font-weight: 700; color: #64748b; cursor: pointer; text-decoration: underline;" title="点击获取手势提示线索" data-i18n="btn_gesture_pwd_hint">手势提示</span>
+    </div>
+
+    <div style="width: 100%; display: flex; gap: 8px; align-items: center;">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+        <input id="unifiedVerifyInput" type="password" data-i18n-placeholder="verify_placeholder_char_pwd" placeholder="或在此输入字符密码..." style="width: 100%; padding: 8px 12px; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; outline: none; font-size: 12.5px; font-weight: 600; background: rgba(255, 255, 255, 0.9);">
+        <span id="btnUnifiedCharHint" style="font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; text-decoration: underline; padding-left: 2px;" title="点击获取字符密码线索" data-i18n="btn_char_pwd_hint">密码提示</span>
+      </div>
+      <button id="btnConfirmUnifiedVerify" class="btn-confirm" style="padding: 8px 14px; font-size: 12px; margin: 0; background: #3b82f6; height: 34px; align-self: flex-start;" data-i18n="btn_confirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<div id="folderPasswordMgrModal">
+  <div class="folder-pwd-card-layout">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
+      <h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin: 0;" data-i18n="menu_enc_mgr">密码管理</h3>
+      <span id="btnCloseFolderPasswordMgrModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; justify-content: center; flex: 1;">
+      <button id="btnMgrSetGesture" style="background: #3b82f6; color: #fff;" data-i18n="btn_mgr_set_gesture">设置手势密码</button>
+      <button id="btnMgrChangeGesture" style="background: #10b981; color: #fff;" data-i18n="btn_mgr_change_gesture">更改手势密码</button>
+      <button id="btnMgrDelGesture" style="background: #ef4444; color: #fff;" data-i18n="btn_mgr_del_gesture">删除手势密码</button>
+    </div>
+  </div>
+</div>
+
+<div id="gestureModal">
+  <div class="gesture-modal-box">
+    <span id="btnCloseGestureModal" class="modal-close-trigger" data-i18n-title="btn_close" style="position: absolute; top: 12px; right: 16px; font-size: 14px; opacity: 0.6; cursor: pointer;">✕</span>
+    <div class="gesture-tips" id="gestureTips" data-i18n="gesture_modal_title">请绘制手势密码</div>
+    <canvas id="gestureCanvas" width="240" height="240"></canvas>
+    <div style="display: flex; gap: 14px; align-items: center; margin-top: 6px;">
+      <span class="gesture-footer-link" id="btnUnlockBySuperPwd" data-i18n="btn_unlock_by_char_pwd">使用字符密码解锁</span>
+      <span class="gesture-footer-link" id="btnRecoverSuperPwdFromGesture" style="color: #ef4444;" data-i18n="btn_char_pwd_hint">显示密码提示</span>
+    </div>
+  </div>
+</div>
+
+<div id="universalContextMenu"></div>
+
+<div class="floating-about-window" id="supabaseAboutPanel">
+  <div class="floating-about-header">
+    <h4 data-i18n="sb_about_title">关于 Supabase 云同步</h4>
+    <span class="modal-close-trigger style-close-floating" data-i18n-title="btn_close" style="font-size:14px;">✕</span>
+  </div>
+  <div class="floating-about-content">
+    <p style="font-weight: 800; color: #1e293b; font-size: 13px; margin-bottom: 6px;" data-i18n="sb_about_heading">云同步服务</p>
+    <p data-i18n="sb_about_p1">这是基于结构化 data 托管通道构建 of 云端多端对齐方案...</p>
+    <p data-i18n="sb_about_p2">✨ 核心特长：无需自己搭建 NAS...</p>
+    <p data-i18n="sb_about_p3">🔐 安全防护：全链路执行安全传输...</p>
+    <p style="margin-top: 16px; border-top: 1px dashed rgba(0,0,0,0.06); padding-top: 12px; font-size: 11.5px; color: #475569;" data-i18n="sb_about_thanks">
+      🌟 致谢
+    </p>
+  </div>
+</div>
+
+<div class="floating-about-window" id="nasAboutPanel">
+  <div class="floating-about-header">
+    <h4 data-i18n="nas_about_title">关于 NAS 私有云配置指南</h4>
+    <span class="modal-close-trigger style-close-floating" data-i18n-title="btn_close" style="font-size:14px;">✕</span>
+  </div>
+  <div class="floating-about-content">
+    <p style="font-weight: 800; color: #1e293b;" data-i18n="nas_about_heading">🛠️ 主流 NAS 及路由器服务激活通关要素：</p>
+    <p style="font-weight: 700; color: #3b82f6; margin-top: 8px; margin-bottom: 2px;" data-i18n="nas_about_syno_title">1. 群晖 NAS (DSM 6.x / 7.x 系统)：</p>
+    <ul>
+      <li data-i18n="nas_about_syno_li1">请登录 DSM，在套件中心...</li>
+    </ul>
+  </div>
+</div>
+
+<div class="floating-about-window" id="webdavAboutPanel">
+  <div class="floating-about-header">
+    <h4 data-i18n="webdav_about_title">关于 WebDAV 第三方云盘同步</h4>
+    <span class="modal-close-trigger style-close-floating" data-i18n-title="btn_close" style="font-size:14px;">✕</span>
+  </div>
+  <div class="floating-about-content">
+    <p data-i18n="webdav_about_p1">这是完全由您自主掌控的托管云端数据同步方案...</p>
+  </div>
+</div>
+
+<!-- 📦 全新四区式重置警告 Modal -->
+<div id="resetWarningModal">
+  <div class="reset-warning-card-layout">
+    <!-- Zone 1: Title Area -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-shrink: 0;">
+      <h3 data-i18n="menu_reset_ext">重置扩展</h3>
+      <span id="btnCloseResetWarningModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+    
+    <div class="sync-internal-scroller" style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
+      <!-- Zone 2: Security Warning Area -->
+      <div style="background: rgba(239, 68, 68, 0.06); border-left: 3.5px solid #ef4444; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #475569; line-height: 1.6; font-weight: 700;" data-i18n="reset_warning_danger_alert">
+        此操作将彻底清空您在本地保存的所有网址导航卡片、文件夹分类及个性化配置，且无法撤销。
+      </div>
+
+      <!-- Zone 3: Cloud Sync Data Area -->
+      <div style="background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+          <!-- Supabase Column -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <span style="font-size: 13px; font-weight: 800; color: #1e293b;">Supabase</span>
+            <span id="lblResetStatusSupabase" style="font-size: 12px; color: #64748b; font-weight: 700;">[未登录]</span>
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 13.5px; font-weight: 700; color: #475569; cursor: pointer; margin-top: 4px;">
+              <input type="checkbox" id="chkResetCloudSupabase" style="width: auto; cursor: pointer;" disabled>
+              <span data-i18n="label_cloud_data_reset">云数据</span>
+            </label>
+          </div>
+          <!-- NAS Column -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; border-left: 1px dashed rgba(0,0,0,0.08); border-right: 1px dashed rgba(0,0,0,0.08);">
+            <span style="font-size: 13px; font-weight: 800; color: #1e293b;">NAS</span>
+            <span id="lblResetStatusNas" style="font-size: 12px; color: #64748b; font-weight: 700;">[未登录]</span>
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 13.5px; font-weight: 700; color: #475569; cursor: pointer; margin-top: 4px;">
+              <input type="checkbox" id="chkResetCloudNas" style="width: auto; cursor: pointer;" disabled>
+              <span data-i18n="label_cloud_data_reset">云数据</span>
+            </label>
+          </div>
+          <!-- WebDAV Column -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <span style="font-size: 13px; font-weight: 800; color: #1e293b;">WebDAV</span>
+            <span id="lblResetStatusWebdav" style="font-size: 12px; color: #64748b; font-weight: 700;">[未登录]</span>
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 13.5px; font-weight: 700; color: #475569; cursor: pointer; margin-top: 4px;">
+              <input type="checkbox" id="chkResetCloudWebdav" style="width: auto; cursor: pointer;" disabled>
+              <span data-i18n="label_cloud_data_reset">云数据</span>
+            </label>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: #475569; line-height: 1.5; margin: 6px 0 0 0; font-weight: 600; text-align: left; border-top: 1px solid rgba(0,0,0,0.03); padding-top: 6px;" data-i18n="reset_cloud_checkbox_hint">
+          勾选后点击窗口左下角[确定],会对连同本地保存的数据及已登录通道的云数据进行删除。
+        </p>
+      </div>
+    </div>
+
+    <!-- Zone 4: Button Area -->
+    <div class="modal-footer" style="margin-top: 14px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.04); flex-shrink: 0; display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn-cancel" id="btnCancelResetWarningModal" style="padding: 9px 16px; font-size: 13px; font-weight: 700;" data-i18n="btn_cancel">取消</button>
+      <button class="btn-confirm" id="btnConfirmResetWarningModal" style="padding: 9px 20px; font-size: 13px; font-weight: 700; background: #ef4444; color: #fff;" data-i18n="btn_confirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 📦 全新删除已设置加密二次确认 Modal -->
+<div id="removeEncryptionConfirmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw !important; height: 100vh !important; background: rgba(15, 23, 42, 0.45) !important; align-items: center; justify-content: center; z-index: 100045;">
+  <div class="reset-warning-card-layout" style="width: 440px; height: auto !important;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-shrink: 0;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;" data-i18n="remove_enc_modal_title">安全提示</h3>
+      <span id="btnCloseRemoveEncryptionModal" class="modal-close-trigger" data-i18n-title="btn_close">✕</span>
+    </div>
+    <div class="sync-internal-scroller" style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
+      <div style="background: rgba(239, 68, 68, 0.06); border-left: 3.5px solid #ef4444; border-radius: 8px; padding: 10px 12px; font-size: 13.5px; color: #475569; line-height: 1.6; font-weight: 700;" data-i18n="confirm_remove_global_encryption_msg">
+        点击确定后会删除已设置了的字符密码和手势密码，同时S导航下已加密的文件夹也会自动解密，重置标签页也会解除密码功能。
+      </div>
+    </div>
+    <div class="modal-footer" style="margin-top: 14px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.04); flex-shrink: 0; display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn-cancel" id="btnCancelRemoveEncryption" style="padding: 9px 16px; font-size: 13px; font-weight: 700;" data-i18n="btn_cancel">取消</button>
+      <button class="btn-confirm" id="btnConfirmRemoveEncryption" style="padding: 9px 20px; font-size: 13px; font-weight: 700; background: #ef4444; color: #fff;" data-i18n="btn_confirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 📦 全新网页图标选择器 Modal -->
+<div id="iconSelectorModal" class="s-fixed-modal-mask" style="display: none; position: fixed; top: 0; left: 0; width: 100vw !important; height: 100vh !important; background: rgba(15, 23, 42, 0.45) !important; align-items: center; justify-content: center; z-index: 100060;">
+  <div class="modal-box" style="width: 440px; height: auto; position: relative; padding: 24px 28px; background: rgba(255, 255, 255, 0.98); border-radius: 20px; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12); border: 1px solid rgba(0, 0, 0, 0.08) !important;">
+    <div style="display: flex; align-items: center; margin-bottom: 18px; position: relative;">
+      <!-- 左上角物理关闭按钮 -->
+      <span id="btnCloseIconSelectorModal" class="modal-close-trigger" data-i18n-title="btn_close" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%); font-size: 14px; cursor: pointer;">✕</span>
+      <div style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;" data-i18n="select_icon_title">选择网页图标</h3>
+        <!-- 强制重新加载按钮 -->
+        <button id="btnReloadIconSelector" style="background: none; border: none; cursor: pointer; color: #64748b; display: flex; align-items: center; padding: 4px; border-radius: 4px; transition: background 0.2s, color 0.2s;" data-i18n-title="btn_reload" title="重新加载">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="iconSelectorGrid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; max-height: 220px; overflow-y: auto; padding: 4px; margin-bottom: 20px;"></div>
+    <!-- 确定与取消按钮，“取消”在左，“确定”在右 -->
+    <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(0,0,0,0.04); padding-top: 14px; margin-top: 0;">
+      <button class="btn-cancel" id="btnCancelIconSelector" style="padding: 9px 16px; font-size: 13px;" data-i18n="btn_cancel">取消</button>
+      <button class="btn-confirm" id="btnConfirmIconSelector" style="padding: 9px 16px; font-size: 13px; background: #3b82f6; color: #fff;" data-i18n="btn_confirm">确定</button>
+    </div>
+  </div>
+</div>
+<script src="sortable.min.js"></script>
+<script src="newtab.js"></script>
+</body>
+</html>
