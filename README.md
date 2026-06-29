@@ -11,7 +11,7 @@
 | [**Chrome Web Store**](https://chromewebstore.google.com/detail/s%E6%A0%87%E7%AD%BE%E9%A1%B5/mdnafccdcagbdhblpipopnkmklmcabip) | V3.2.2 | ✅ 已发布（与V3.2.3没有功能区别，只是对隐私策略调整了）  |
 | [**Microsoft Edge Add-ons**](https://microsoftedge.microsoft.com/addons/detail/s%E6%A0%87%E7%AD%BE%E9%A1%B5/mkcffeiokldkoegjncpbekekeoohagpf) | V3.1 | 🚀 最新版 V3.2.3 审核中 |
 | [**Firefox Add-ons**](https://addons.mozilla.org/zh-CN/firefox/addon/stab/) | V3.2.1 | ✅ 已发布（与V3.2.3没有功能区别，只是对隐私策略调整了） |
-| **360 浏览器商店** | -- | ⌛ V3.2.3 已上传，审核中 |
+| **360浏览器商店** | -https://ext.se.360.cn/#/extension-detail?id=ilelfiodkfnnidlpkdllkealajlnnagj- | ✅ V3.2.3 已发布 |
 
 ---
 
